@@ -232,3 +232,5 @@ figcaption b, figcaption strong { color: var(--accent); }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 }
+
+.hero h1 .title-topic{display:inline-block;white-space:nowrap}
