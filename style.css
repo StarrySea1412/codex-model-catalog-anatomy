@@ -102,6 +102,9 @@ h1 em { color: var(--accent); font-style: normal; }
 }
 .toc b { color: var(--accent); font-family: var(--mono); }
 .toc span { min-width: 0; }
+.toc-copy { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); align-items: baseline; gap: 16px; }
+.toc-title { min-width: 0; font-size: 14px; font-weight: 600; }
+.toc-desc { color: var(--soft); font-size: 13px; }
 
 .content, .chapter, .appendix { min-width: 0; max-width: 100%; }
 .chapter {
@@ -220,6 +223,7 @@ figcaption b, figcaption strong { color: var(--accent); }
   .stats span:nth-child(even) { border-right: 0; }
   .stats span:nth-child(n + 3) { border-bottom: 0; }
   .toc a { grid-template-columns: 29px minmax(0, 1fr); gap: 8px; }
+  .toc-copy { grid-template-columns: minmax(0, 1fr); gap: 2px; }
   .chapter { padding-top: 28px; padding-bottom: 32px; }
   h2 { font-size: 32px; }
   h3 { font-size: 20px; }
