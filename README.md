@@ -7,6 +7,8 @@
 > 环境：Codex CLI 0.169.1 (Windows) · CC Switch 4.0.33（已对照 4.0.36 发版说明）
 > 说明：文中账号、密钥、机器路径均已脱敏。
 
+在线阅读：[Codex 模型目录解剖 · 带附图的文章页](https://starrysea1412.github.io/codex-model-catalog-anatomy/)
+
 ---
 
 ## 一、Codex 的模型配置分三层，互不同步

@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Codex 模型配置三层解剖：Provider、Catalog、Per-thread，CC Switch 协议路由，以及 117 字符模板退化的生成与修复。四张机制附图。"><title>Codex 自定义模型的三层结构 · 造物手记</title><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css"></head>
+<body><header class="mast"><div class="wrap mast-in"><a class="brand" href="https://starrysea1412.github.io/makers-notebook/">造物手记 · 技术解剖</a><a class="jump" href="#contents">目录 ↓</a></div></header>
+<main class="wrap"><section class="hero"><p class="edition">MODEL CATALOG / 模型目录 · 2026.11</p><p class="kicker">FIELD NOTES · 配置、目录与实际请求</p><h1>Codex 模型目录<em>解剖</em></h1><p class="dek">配置文件改了，界面没变；模型名选对了，工具却少了。沿 Provider、Catalog、Per-thread 三层，把同一条请求和一份目录拆开核对。<strong>四张过程图，一次 25,933→117 字符的模板走查。</strong></p><div class="stats"><span><b>08</b> 章 · 从配置到读回</span><span><b>04</b> 图 · 机制逐层展开</span><span><b>03</b> 层 · 各有观测点</span><span><b>117</b> 字符 · 本文退化样本</span></div><aside class="abstract"><b>本片提要</b><p>连接参数、模型目录和对话保存值分开取证，再查目录生成时用了哪个 CLI。本文记录 Codex CLI 0.169.1（Windows）与 CC Switch 4.0.33，并对照 4.0.36 发版说明。账号、密钥、机器路径均已脱敏；数字和代码对应正文记录的版本。</p></aside><nav class="toc" id="contents" aria-label="文章目录"><p class="label">CONTENTS · 八章与一份证据索引</p><a href="#layers"><b>01</b>三层配置<span>连接参数、目录快照与对话保存值</span></a>
+<a href="#display"><b>02</b>界面显示<span>显示名与「自定义」标签</span></a>
+<a href="#routing"><b>03</b>协议路由<span>原生直转与双向转换</span></a>
+<a href="#route-check"><b>04</b>四个检查点<span>配置、开关、端口与日志</span></a>
+<a href="#catalog"><b>05</b>模型名从哪来<span>内置、远程、本地与运行时兜底</span></a>
+<a href="#quality"><b>06</b>117 字符的成因<span>生成来源选错后的完整路径</span></a>
+<a href="#repair"><b>↳</b>修复与读回<span>重新生成、重启、核对 provenance</span></a>
+<a href="#commands"><b>07</b>排查命令<span>把配置与实际请求分别取证</span></a>
+<a href="#quick-card"><b>08</b>要点归纳<span>如果只带走八条</span></a>
+<a href="#locations"><b>附</b>文件与源码位置<span>回到原始证据</span></a></nav></section><article class="content"><section class="chapter" id="layers"><h2>一、Codex 的模型配置分三层，互不同步</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>层</th>
+<th>存哪</th>
+<th>何时读</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>① Provider</td>
+<td><code>config.toml</code> 的 <code>[model_providers.&lt;id&gt;]</code></td>
+<td>每个请求</td>
+<td>base_url、wire_api、鉴权</td>
+</tr>
+<tr>
+<td>② Catalog</td>
+<td><code>model_catalog_json</code> 指向的 JSON</td>
+<td><strong>app-server 启动时读一次</strong>，进程内不刷新</td>
+<td>模型的 prompt、工具能力、推理档位、显示名</td>
+</tr>
+<tr>
+<td>③ Per-thread</td>
+<td><code>state_5.sqlite</code> 的 <code>threads.model</code> / <code>threads.reasoning_effort</code></td>
+<td>打开或恢复对话时</td>
+<td>这条对话实际用哪个模型、什么强度</td>
+</tr>
+</tbody></table></div>
+<p>三者的关系：</p>
+<ul>
+<li><code>config.toml</code> 顶层 <code>model = &quot;...&quot;</code> 只是<strong>新对话的种子值</strong>。</li>
+<li>改它不会修改任何已存在的对话。</li>
+<li>界面模型标签读的是 ③；picker 能选什么读的是 ②；请求发出去的 model 字段读的是 ③。</li>
+</ul>
+<p>因此&quot;配置改了&quot;和&quot;界面变了&quot;和&quot;请求变了&quot;是三件独立的事，各自有各自的观测点。</p>
+<figure class="diagram" id="fig-a"><img src="assets/01-config-layers.svg" alt="三条独立路径：Provider 管连接参数，Catalog 提供启动时读取的模型目录快照，Per-thread 保存当前对话的模型与推理强度。" width="720" height="800" loading="lazy" decoding="async"><figcaption><b>FIG. A</b> · 三层各有保存值与观测点。顶层 <code>model</code> 只为新对话提供初值；目录快照、当前对话与连接参数各自核对。</figcaption></figure>
+</section>
+<section class="chapter" id="display"><h2>二、界面显示逻辑</h2>
+<p>Desktop 端 app.asar 里的渲染代码：</p>
+<pre><code class="language-js">let eB = eW?.displayName ?? z ?? formatMessage({id:&quot;composer.mode.local.model.custom&quot;})
+</code></pre>
+<ul>
+<li>有 <code>displayName</code> 就显示名字，去掉 <code>gpt-</code> 前缀（<code>stripGptPrefix</code>）。</li>
+<li>没有才显示 &quot;自定义&quot;（locale 键 <code>composer.mode.local.model.custom</code>，
+描述是 <em>&quot;Custom model from config&quot;</em>）。</li>
+</ul>
+<p>&quot;自定义&quot;是 Codex 对&quot;模型来自 config 而非官方订阅目录&quot;的固有分类，官方标记为
+not planned，与是否经过代理无关。</p>
+<p>强度标签来自同一 locale 文件：<code>composer.mode.local.reasoning.xhigh.label = 极高</code>、
+<code>max.label = Max</code>。</p>
+</section>
+<section class="chapter" id="routing"><h2>三、CC Switch 的三种模式与&quot;路由&quot;的实际含义</h2>
+<p>源码：GitHub <code>farion1231/cc-switch</code></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>模式</th>
+<th>行为</th>
+<th>配置侧改动</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>直连 direct</td>
+<td>请求不经过 CC Switch</td>
+<td>只改写 <code>config.toml</code> 的 base_url 和 key</td>
+</tr>
+<tr>
+<td>路由 proxy</td>
+<td>请求经本地服务转发</td>
+<td>base_url → <code>http://127.0.0.1:15721/v1</code>，key → <code>PROXY_MANAGED</code></td>
+</tr>
+<tr>
+<td>聚合 stack</td>
+<td>按模型把请求分给多家供应商</td>
+<td>生成合并目录</td>
+</tr>
+</tbody></table></div>
+<p><strong>路由只在协议不一致时做转换。</strong> 判定逻辑（<code>src-tauri/src/proxy/providers/codex.rs:83</code>）：</p>
+<pre><code class="language-rust">pub fn should_convert_codex_responses_to_chat(provider, endpoint) -&gt; bool {
+    is_codex_responses_endpoint(endpoint)
+      &amp;&amp; codex_provider_uses_chat_completions(provider)  // meta.apiFormat == &quot;openai_chat&quot;
+}
+</code></pre>
+<p>供应商是原生 Responses（<code>apiFormat = &quot;openai_responses&quot;</code>）时，第 2～4 步转换不发生，
+请求直接转给上游。其官方文档原话：
+&quot;供应商原生就是 Responses 的……请求直接发往上游，不做任何格式改写。&quot;</p>
+<p>CC Switch 的模型映射（<code>src-tauri/src/proxy/model_mapper.rs</code>）只处理 Claude 的
+haiku/sonnet/opus/fable 档位，对 Codex 不做模型替换。</p>
+<p>结论：<strong>CC Switch 的&quot;路由&quot;= 协议转换 + 故障转移 + 请求日志，它不选模型、不改模型名。</strong></p>
+<figure class="diagram" id="fig-b"><img src="assets/02-protocol-routing.svg" alt="Codex Responses 请求经 CC Switch 代理，原生 Responses 供应商直接转发，openai_chat 供应商才转换请求和响应；两条路径保留同一个模型名。" width="720" height="800" loading="lazy" decoding="async"><figcaption><b>FIG. B</b> · 同一个模型名，协议分支由供应商的 <code>apiFormat</code> 决定。图示对应文中版本的 Codex 代理路径。</figcaption></figure>
+</section>
+<section class="chapter" id="route-check"><h2>四、判断&quot;是否真的在路由&quot;的四个检查点</h2>
+<pre><code class="language-bash"># 1. 模式声明
+cat ~/.cc-switch/live-state.json          # {&quot;codex&quot;:{&quot;mode&quot;:&quot;direct&quot;|&quot;proxy&quot;}}
+
+# 2. 数据库开关
+sqlite3 ~/.cc-switch/cc-switch.db \
+  &quot;select app_type, proxy_enabled, enabled from proxy_config where app_type=&#39;codex&#39;&quot;
+
+# 3. 端口是否有进程监听
+netstat -ano | grep 15721                 # 无输出 = 没有转发服务
+
+# 4. 配置里 base_url 指向哪
+grep -A3 &#39;\[model_providers&#39; ~/.codex/config.toml   # 本地 127.0.0.1 才是路由
+</code></pre>
+<p>补充：<code>proxy_request_logs</code> 表中的记录若 <code>data_source=&#39;codex_session&#39;</code>、
+<code>provider_id=&#39;_codex_session&#39;</code>，那是从 Codex 会话日志导入的统计，不是代理记账，
+不能用来判断是否在路由。</p>
+</section>
+<section class="chapter" id="catalog"><h2>五、模型名从哪来</h2>
+<p>模型能选什么，取决于第 ② 层 catalog 的来源，有三种：</p>
+<ol>
+<li><strong>内置 slug</strong>：模型名与该版本内置条目一致，直接用内置 metadata。</li>
+<li><strong>远程目录</strong>：<code>&lt;base_url&gt;/models?client_version=x.y.z</code>，需返回 Codex 格式
+<code>{&quot;models&quot;:[...]}</code>（只有 ID 列表不够）。自定义路径用 <code>model_catalog_url</code>。</li>
+<li><strong>本地文件</strong>：<code>model_catalog_json = &quot;绝对路径&quot;</code>，启动时加载，<strong>替换</strong>内置目录。</li>
+</ol>
+<p>若目录里没有该 slug，Codex 不会拒绝，而是用兜底元数据
+（<code>codex-rs/models-manager/src/model_info.rs:98</code> <code>model_info_from_slug()</code>）：
+上下文 272k、无推理档位、无 apply_patch、无 search，prompt 用通用
+<code>BASE_INSTRUCTIONS</code>，并打一条 warning。</p>
+<p>所以&quot;能发请求&quot;与&quot;模型行为正确&quot;是两件事。</p>
+</section>
+<section class="chapter" id="quality"><h2>六、一个实际遇到的 catalog 质量问题</h2>
+<p>CC Switch 生成的 <code>cc-switch-model-catalog.json</code> 使用一个极简模板
+（<code>src-tauri/src/resources/codex_native_responses_template.json</code>，1099 字节）作底，
+只覆盖 slug / display_name / 窗口等少数几项。</p>
+<p>同一条 <code>gpt-6.2-sol</code> 的对比：</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>字段</th>
+<th>Codex 内置条目</th>
+<th>CC Switch 生成条目</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>字段数</td>
+<td>40</td>
+<td>27</td>
+</tr>
+<tr>
+<td>system prompt 长度</td>
+<td>25,933 字符</td>
+<td><strong>117 字符</strong></td>
+</tr>
+<tr>
+<td>apply_patch_tool_type</td>
+<td><code>freeform</code></td>
+<td>缺失（退化为 shell 写文件）</td>
+</tr>
+<tr>
+<td>supports_search_tool</td>
+<td>true</td>
+<td>false</td>
+</tr>
+<tr>
+<td>multi_agent_version</td>
+<td>v2</td>
+<td>缺失</td>
+</tr>
+<tr>
+<td>experimental_supported_tools</td>
+<td>5 项</td>
+<td><code>[]</code></td>
+</tr>
+</tbody></table></div>
+<p>117 字符的 prompt 全文：</p>
+<blockquote>
+<p>&quot;You are Codex, a coding agent. You and the user share the same workspace
+and collaborate to achieve the user&#39;s goals.&quot;</p>
+</blockquote>
+<p><strong>成因（已查实）</strong>：catalog 生成时调用的模板源是本机 <code>codex debug models --bundled</code>
+（<code>src-tauri/src/codex_config.rs:1914</code>），而这个命令解析到的二进制<strong>不一定是桌面端
+在用的那个</strong>。详见下一节的候选顺序与实锤。</p>
+<p><strong>症状</strong>：模型名正确、请求可达，但工具集与提示词退化。</p>
+<h3 id="binary-source">6.1 根因实锤：<code>which codex</code> 指向一个过期的 npm 垫片</h3>
+<p>CC Switch 的模板源按以下顺序解析（<code>codex_config.rs:1581</code> <code>CODEX_CLI_FIXED_CANDIDATES</code>，
+之后追加桌面版候选）：</p>
+<ol>
+<li>PATH 上的 <code>codex</code>（所有平台，第一位）</li>
+<li>Homebrew 的三个固定路径</li>
+<li><strong>最后</strong>才是桌面版自带的 <code>%LOCALAPPDATA%\OpenAI\Codex\bin\&lt;版本&gt;\codex.exe</code>
+（版本目录按修改时间新→旧取最新）</li>
+</ol>
+<p>本机实际情况：</p>
+<pre><code>which codex
+→ &lt;npm global bin&gt;\codex     # npm 垫片，2026-08-12 安装
+codex --version
+→ codex-cli 0.147.0                            # 落后桌面端两代
+</code></pre>
+<p>实测 0.147.0 的内置目录只有 gpt-5.6 / 5.5 / 5.4 系列，<strong>没有 6.2-sol / 6.2-astra</strong>。
+于是生成这两个条目时 <code>find_codex_official_model()</code>（<code>codex_config.rs:2403</code>）找不到
+官方镜像，按源码走向 <code>codex_catalog_model_entry()</code> 的极简模板 → 117 字符裸奔。</p>
+<p>而 6.1-sol / 6-astra 两条之所以有完整的 21K 指令，是因为 provider 行里存了显式
+<code>baseInstructions</code> 覆盖（<code>spec.base_instructions</code> 非空路径）——特例，不是通用机制。</p>
+<p><strong>关键澄清</strong>：受污染的只有 CC Switch 生成的 catalog 元数据。桌面端实际运行的是
+<code>bin/&lt;version-hash&gt;/codex.exe</code>（0.169.1，未受 npm 垫片影响），请求、rollout、
+界面全部正常。这不是客户端 bug，是&quot;生成目录时选错了二进制&quot;的链路问题。</p>
+<p>上游也在收敛同类问题：CC Switch v4.0.36 发版说明提到
+&quot;聚合模式下新发布的官方模型（如 GPT-6.2）要很久才出现……获取列表时报的 Codex
+版本会参考桌面版自带的 CLI&quot;，而本机跑的是 4.0.33。</p>
+<figure class="diagram" id="fig-c"><img src="assets/03-template-degradation.svg" alt="目录退化链：PATH 首选旧 npm CLI 0.147.0，其内置目录缺少目标模型，生成器改用极简模板，得到 117 字符提示词；桌面实际运行 CLI 0.169.1 是独立路径。" width="720" height="800" loading="lazy" decoding="async"><figcaption><b>FIG. C</b> · 选错的是生成目录时使用的二进制。117 是提示词字符数；桌面运行路径与生成来源要分开检查。</figcaption></figure>
+<h3 id="repair">6.2 修复方案（二选一，都绕过 npm 垫片）</h3>
+<p><strong>方案 A（推荐）</strong>——清除过期垫片，让候选列表落到桌面版 CLI：</p>
+<pre><code class="language-bash">npm uninstall -g @openai/codex
+# 或直接删除 &lt;npm global bin&gt;\codex*
+# 之后任选其一：
+#   1) 重装最新 CLI：npm install -g @openai/codex
+#   2) 不装——CC Switch 会退到桌面版 bin/0.169.1
+</code></pre>
+<p>然后在 CC Switch 里对当前供应商重新点一次&quot;启用&quot;（触发目录重新生成），
+完全退出并重启 Codex。密钥、路由配置均不变，变的只有目录内容。</p>
+<p><strong>方案 B</strong>——不动系统环境，自行维护 catalog：从 0.169.1 的
+<code>codex debug models --bundled</code> 取出完整条目，只改 <code>slug</code> / <code>display_name</code>，
+写入独立 JSON 并让 <code>model_catalog_json</code> 指向它。这也是官方网关文档推荐的别名做法。</p>
+<figure class="diagram" id="fig-d"><img src="assets/04-catalog-readback.svg" alt="目录修复验收路径：取得正确 CLI 的完整条目，重新生成或指向完整 catalog，完全退出重启后读取新快照，再核对有效目录、工具字段与 provenance。" width="720" height="800" loading="lazy" decoding="async"><figcaption><b>FIG. D</b> · 先修生成来源，再让新进程读取新快照，最后核对实际条目与 provenance。已有对话仍保留自己的模型与推理强度。</figcaption></figure>
+<h3 id="verification">6.3 修复后的验证清单</h3>
+<pre><code class="language-bash"># 1. 确认候选解析到了正确的二进制
+which codex &amp;&amp; codex --version        # 应为 0.169.x，或不存在（由 CC Switch 落到桌面版）
+
+# 2. 确认该二进制的内置目录里有目标模型
+codex debug models --bundled | grep -c &quot;gpt-6.2-sol&quot;   # ≥1
+
+# 3. 确认重新生成的 catalog 恢复完整条目
+python -c &quot;
+import json
+d = json.load(open(r&#39;%CODEX_HOME%\cc-switch-model-catalog.json&#39;, encoding=&#39;utf-8&#39;))
+for m in d[&#39;models&#39;]:
+    bi = m.get(&#39;base_instructions&#39;) or &#39;&#39;
+    print(m[&#39;slug&#39;], len(bi))
+&quot;
+# 期望：gpt-6.2-sol / gpt-6.2-astra 的指令长度回到 25933（与官方一致）
+# 6.1-sol / gpt-6-astra 保持 21769 / 21420（显式覆盖，不受影响）
+
+# 4. 确认 Codex 实际加载了新目录（必须先完全退出重启）
+codex debug models | python -c &quot;
+import sys, json
+d = json.load(sys.stdin)
+for m in d[&#39;models&#39;]:
+    print(m[&#39;slug&#39;], m.get(&#39;shell_type&#39;), m.get(&#39;apply_patch_tool_type&#39;))
+&quot;
+# 期望：6.2-sol 的 shell_type=unified_exec、apply_patch=freeform
+
+# 5. roll 里的 provenance 应指向模型条目而非退化为占位
+grep -o &#39;&quot;provenance&quot;:{[^}]*}&#39; &lt;新会话的 rollout.jsonl&gt; | head -1
+</code></pre>
+</section>
+<section class="chapter" id="commands"><h2>七、排查命令清单</h2>
+<pre><code class="language-bash"># 内置目录（完整 metadata，与账号无关）
+codex debug models --bundled
+
+# 当前生效目录（合并 model_catalog_json 之后）
+codex debug models
+
+# 每条对话保存的模型与强度
+sqlite3 ~/.codex/state_5.sqlite \
+  &quot;select model, reasoning_effort, updated_at from threads order by updated_at desc limit 20&quot;
+
+# 每轮请求实际发出的模型（rollout）
+grep -m1 &#39;&quot;turn_context&quot;&#39; &lt;rollout 文件&gt;     # payload.model
+
+# 供应商实际支持哪些模型
+curl -H &quot;Authorization: Bearer &lt;key&gt;&quot; &lt;base_url&gt;/models
+
+# 配置中有不认识的字段直接报错
+codex --strict-config
+</code></pre>
+<p>rollout 文件路径：<code>~/.codex/sessions/YYYY/MM/DD/rollout-&lt;时间&gt;-&lt;uuid&gt;.jsonl</code>，
+完整路径在 <code>state_5.sqlite</code> 的 <code>threads.rollout_path</code> 列。</p>
+<p><code>session_meta</code> 事件里的 <code>base_instructions.provenance.model</code> 记录了这条会话的
+系统提示词来自哪个模型条目，是验证 catalog 是否生效的直接证据。</p>
+</section>
+<section class="chapter" id="quick-card"><h2>八、要点归纳</h2>
+<ol>
+<li>Provider、Catalog、Per-thread 三层各自独立，改一层不会同步另外两层。</li>
+<li>Catalog 只在 app-server 启动时读一次；改了 <code>model_catalog_json</code> 必须重启进程，
+否则 picker 不变。</li>
+<li>修改 <code>config.toml</code> 的 <code>model</code> 只影响新建对话，已有对话保持自己的保存值。</li>
+<li>界面标签读 per-thread 值；请求 model 字段也读 per-thread 值；
+但 picker 可选范围读 catalog 快照。</li>
+<li>CC Switch 的路由是协议转换，不做模型映射；判断是否在路由看端口、
+<code>live-state.json</code>、<code>proxy_config</code> 三处。</li>
+<li>模型名可达不等于能力完整；catalog 缺条目时 Codex 会用兜底元数据，
+表现正常但工具与 prompt 退化。</li>
+<li>工具生成的 catalog 需要核对：用 <code>codex debug models</code> 对比字段数与 prompt 长度。</li>
+<li><strong><code>which &lt;tool&gt;</code> 上的同名工具不一定是你在用的那个</strong>。生成类工具（如 CC Switch）
+解析二进制时按候选顺序取第一个，PATH 上的过期 npm 垫片会静默劫持整个链路；
+客户端本身正常、只有中间层产物退化，是这类问题的典型指纹。</li>
+</ol>
+</section>
+<section class="appendix" id="locations"><h2>附：文件与代码位置</h2>
+<ul>
+<li><code>~/.codex/config.toml</code> —— provider、默认 model</li>
+<li><code>~/.codex/cc-switch-model-catalog.json</code> —— CC Switch 生成的 catalog</li>
+<li><code>~/.cc-switch/live-state.json</code>、<code>~/.cc-switch/cc-switch.db</code>
+（表：providers / proxy_config / proxy_request_logs）</li>
+<li><code>~/.codex/state_5.sqlite</code> → <code>threads</code>（model / reasoning_effort / rollout_path）</li>
+<li><code>~/.codex/sessions/**/rollout-*.jsonl</code> → <code>session_meta</code> / <code>turn_context</code></li>
+<li>CC Switch 源码（GitHub <code>farion1231/cc-switch</code>）：<ul>
+<li><code>src-tauri/src/proxy/providers/codex.rs</code> —— 路由转换判定</li>
+<li><code>src-tauri/src/proxy/model_mapper.rs</code> —— 模型映射（仅 Claude）</li>
+<li><code>src-tauri/src/codex_config.rs:1338</code> —— <code>codex_catalog_model_entry</code></li>
+<li><code>src-tauri/src/codex_config.rs:1581</code> —— <code>CODEX_CLI_FIXED_CANDIDATES</code>（PATH 优先）</li>
+<li><code>src-tauri/src/codex_config.rs:1795</code> —— <code>codex_cli_candidates()</code>（桌面版最后）</li>
+<li><code>src-tauri/src/codex_config.rs:1914</code> —— 模板源 <code>debug models --bundled</code></li>
+<li><code>src-tauri/src/codex_config.rs:2403</code> —— <code>find_codex_official_model</code>（镜像查找）</li>
+<li><code>src-tauri/src/codex_config.rs:2430</code> —— <code>codex_official_model_entry</code>（镜像生成）</li>
+<li><code>src-tauri/src/services/provider/codex_client_catalog.rs</code> —— 目录&quot;代次&quot;说明</li>
+</ul>
+</li>
+<li>Codex 源码（GitHub <code>openai/codex</code>）：<ul>
+<li><code>codex-rs/models-manager/src/model_info.rs:98</code> —— <code>model_info_from_slug()</code></li>
+<li><code>codex-rs/config/src/config_toml.rs</code> —— <code>model_catalog_json</code> 仅启动加载</li>
+<li><code>codex-rs/protocol/src/openai_models.rs:1074</code> —— <code>base_instructions</code> 提升为
+<code>model_messages.instructions_template</code></li>
+</ul>
+</li>
+</ul>
+</section>
+<section class="appendix" id="series"><h2>系列导航</h2>
+<p>本篇是「造物手记」系列的技术解剖篇之一。系列主线：把「Agent 是怎么干活的」一件件拆开看。</p>
+<ul>
+<li>系列总目录：<a href="https://starrysea1412.github.io/makers-notebook/">https://starrysea1412.github.io/makers-notebook/</a></li>
+<li>相关往期：<a href="https://github.com/StarrySea1412/agent-switchboard">VOL.10 给 Agent 配一台总机（模型路由与降级）</a> · <a href="https://github.com/StarrySea1412/agent-kernel">VOL.04 Agent 内核</a></li>
+</ul>
+</section>
+<section class="appendix" id="license"><h2>License</h2>
+<p>MIT</p>
+</section></article></main>
+<footer class="foot"><div class="wrap"><p>造物手记 · Codex 模型目录解剖</p><p>8 章 · 4 张机制附图 · 2026.11 · StarrySea1412</p><p><a href="https://github.com/StarrySea1412/codex-model-catalog-anatomy">正文源码</a> · <a href="https://starrysea1412.github.io/makers-notebook/">全系列目录</a> · <a href="#contents">回到目录 ↑</a></p></div></footer></body></html>
