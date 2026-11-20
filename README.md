@@ -25,6 +25,10 @@
 
 因此"配置改了"和"界面变了"和"请求变了"是三件独立的事，各自有各自的观测点。
 
+![三条独立路径：Provider 管连接参数，Catalog 提供启动时读取的模型目录快照，Per-thread 保存当前对话的模型与推理强度。](assets/01-config-layers.svg)
+
+*FIG. A · 三层各有保存值与观测点。顶层 `model` 只为新对话提供初值；目录快照、当前对话与连接参数各自核对。*
+
 ---
 
 ## 二、界面显示逻辑
@@ -74,6 +78,10 @@ CC Switch 的模型映射（`src-tauri/src/proxy/model_mapper.rs`）只处理 Cl
 haiku/sonnet/opus/fable 档位，对 Codex 不做模型替换。
 
 结论：**CC Switch 的"路由"= 协议转换 + 故障转移 + 请求日志，它不选模型、不改模型名。**
+
+![Codex Responses 请求经 CC Switch 代理，原生 Responses 供应商直接转发，openai_chat 供应商才转换请求和响应；两条路径保留同一个模型名。](assets/02-protocol-routing.svg)
+
+*FIG. B · 同一个模型名，协议分支由供应商的 `apiFormat` 决定。图示对应文中版本的 Codex 代理路径。*
 
 ---
 
@@ -180,6 +188,10 @@ codex --version
 "聚合模式下新发布的官方模型（如 GPT-6.2）要很久才出现……获取列表时报的 Codex
 版本会参考桌面版自带的 CLI"，而本机跑的是 4.0.33。
 
+![目录退化链：PATH 首选旧 npm CLI 0.147.0，其内置目录缺少目标模型，生成器改用极简模板，得到 117 字符提示词；桌面实际运行 CLI 0.169.1 是独立路径。](assets/03-template-degradation.svg)
+
+*FIG. C · 选错的是生成目录时使用的二进制。117 是提示词字符数；桌面运行路径与生成来源要分开检查。*
+
 ### 6.2 修复方案（二选一，都绕过 npm 垫片）
 
 **方案 A（推荐）**——清除过期垫片，让候选列表落到桌面版 CLI：
@@ -198,6 +210,10 @@ npm uninstall -g @openai/codex
 **方案 B**——不动系统环境，自行维护 catalog：从 0.169.1 的
 `codex debug models --bundled` 取出完整条目，只改 `slug` / `display_name`，
 写入独立 JSON 并让 `model_catalog_json` 指向它。这也是官方网关文档推荐的别名做法。
+
+![目录修复验收路径：取得正确 CLI 的完整条目，重新生成或指向完整 catalog，完全退出重启后读取新快照，再核对有效目录、工具字段与 provenance。](assets/04-catalog-readback.svg)
+
+*FIG. D · 先修生成来源，再让新进程读取新快照，最后核对实际条目与 provenance。已有对话仍保留自己的模型与推理强度。*
 
 ### 6.3 修复后的验证清单
 

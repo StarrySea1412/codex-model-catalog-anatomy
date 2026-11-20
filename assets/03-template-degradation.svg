@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 800" width="720" height="800" lang="zh-CN" role="img" aria-labelledby="title desc">
+  <title id="title">生成目录时选错 CLI，提示词退回 117 字符模板</title>
+  <desc id="desc">本文样本中，CC Switch 生成目录时优先解析 PATH 上的 npm codex CLI 0.147.0。这个版本的 bundled 目录缺少 gpt-6.2-sol 和 gpt-6.2-astra，导致官方条目查找失败，生成器套用极简模板，catalog 中提示词仅 117 字符。另一路桌面实际使用自带 CLI 0.169.1，运行二进制没有降为旧版。生成模板与运行程序取自不同的 CLI。25933 与 117 比较的是本文提示词字符数，不是 token、上下文窗口或模型权重。此处 CC Switch 生成阶段的模板回退与 Codex 运行时未知 slug 的兜底不同。</desc>
+  <defs>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M24 0H0V24" fill="none" stroke="#bdb094" stroke-width="0.6" opacity="0.22"/>
+    </pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1 1L8 5L1 9" fill="none" stroke="#263950" stroke-width="1.5" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+  <rect width="720" height="800" fill="#fbf5e6"/>
+  <rect x="16" y="16" width="688" height="768" fill="url(#grid)"/>
+  <g font-family="system-ui, 'Microsoft YaHei', sans-serif" fill="#263950">
+    <text x="32" y="60" font-size="34" font-weight="750">一份目录，选错了模板源</text>
+    <text x="32" y="101" font-size="24" fill="#4f5b68">同名 codex · 生成模板与实际运行取自两处</text>
+    <path d="M32 119H688" stroke="#bdb094" stroke-width="1.2"/>
+
+    <!-- Two selection sites diverge; the runtime branch does not feed the template. -->
+    <circle cx="360" cy="137" r="4" fill="#8b4f1c"/>
+    <path d="M360 141v4H55v33M360 145H584v33" fill="none" stroke="#263950" stroke-width="1.8" marker-end="url(#arrow)"/>
+    <text x="103" y="175" font-size="26" font-weight="700" fill="#8b4f1c">生成目录</text>
+    <text x="491" y="175" font-size="26" font-weight="700">实际运行</text>
+    <path d="M460 185V691" stroke="#bdb094" stroke-width="1.2" stroke-dasharray="5 6"/>
+
+    <!-- Generation lane: five explicit causal steps. -->
+    <g fill="none" stroke="#263950" stroke-width="1.8" marker-end="url(#arrow)">
+      <path d="M55 245v75"/>
+      <path d="M55 369v50"/>
+      <path d="M55 457v64"/>
+      <path d="M55 559v67"/>
+    </g>
+    <g fill="#fbf5e6" stroke="#8b4f1c" stroke-width="2">
+      <circle cx="55" cy="225" r="18"/><circle cx="55" cy="350" r="18"/><circle cx="55" cy="438" r="18"/><circle cx="55" cy="540" r="18"/><circle cx="55" cy="646" r="18"/>
+    </g>
+    <g text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-size="24" font-weight="700" fill="#8b4f1c">
+      <text x="55" y="233">1</text><text x="55" y="358">2</text><text x="55" y="446">3</text><text x="55" y="548">4</text><text x="55" y="654">5</text>
+    </g>
+
+    <rect x="91" y="187" width="352" height="87" rx="5" fill="#f3ddb0" stroke="#263950" stroke-width="1.8"/>
+    <text x="109" y="221" font-size="26" font-weight="700">PATH 首选 npm codex</text>
+    <text x="109" y="257" font-family="ui-monospace, Consolas, monospace" font-size="28" font-weight="750" fill="#8b4f1c">CLI 0.147.0</text>
+
+    <text x="109" y="319" font-size="26" font-weight="700">读取 bundled 目录</text>
+    <text x="109" y="351" font-size="24">缺少 <tspan font-family="ui-monospace, Consolas, monospace">gpt-6.2-sol</tspan></text>
+    <text x="109" y="383" font-size="24">缺少 <tspan font-family="ui-monospace, Consolas, monospace">gpt-6.2-astra</tspan></text>
+
+    <text x="109" y="434" font-size="26" font-weight="700">官方条目查找失败</text>
+    <text x="109" y="466" font-size="24" fill="#4f5b68">CC Switch 无法镜像 6.2</text>
+
+    <!-- Folded template specimen instead of an undifferentiated text card. -->
+    <path d="M109 495H423L441 513V583H109Z" fill="#fbf5e6" stroke="#263950" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="M423 495v18h18" fill="none" stroke="#263950" stroke-width="1.4"/>
+    <text x="126" y="532" font-size="26" font-weight="700" fill="#8b4f1c">生成器套用极简模板</text>
+    <text x="126" y="565" font-size="24" fill="#4f5b68">模板文件 / JSON</text>
+
+    <!-- The result measures text characters, not tokens or model capacity. -->
+    <path d="M109 604H423L441 622V691H109Z" fill="#f3ddb0" stroke="#263950" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="M423 604v18h18" fill="none" stroke="#263950" stroke-width="1.4"/>
+    <text x="126" y="635" font-size="24" font-weight="700">生成后的 catalog</text>
+    <text x="126" y="678" font-family="ui-monospace, Consolas, monospace" font-size="48" font-weight="750" fill="#8b4f1c">117</text>
+    <text x="235" y="676" font-size="28" font-weight="700">字符提示词</text>
+
+    <!-- Independent desktop executable: it remains the newer version. -->
+    <rect x="480" y="187" width="208" height="87" rx="5" fill="#fbf5e6" stroke="#263950" stroke-width="1.8"/>
+    <text x="496" y="220" font-size="26" font-weight="700">桌面自带 CLI</text>
+    <text x="496" y="257" font-family="ui-monospace, Consolas, monospace" font-size="26" font-weight="750">0.169.1</text>
+    <path d="M584 276v54" fill="none" stroke="#263950" stroke-width="1.8" marker-end="url(#arrow)"/>
+    <path d="M510 344H643L661 362V475H510Z" fill="#fbf5e6" stroke="#263950" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="M643 344v18h18M524 391h121" fill="none" stroke="#263950" stroke-width="1.4"/>
+    <path d="M526 366l10 9-10 9M543 384h15" fill="none" stroke="#8b4f1c" stroke-width="2" stroke-linecap="round"/>
+    <text x="585" y="423" text-anchor="middle" font-family="ui-monospace, Consolas, monospace" font-size="24" font-weight="700">codex.exe</text>
+    <text x="585" y="459" text-anchor="middle" font-size="26">照常执行</text>
+    <path d="M584 478v55" fill="none" stroke="#263950" stroke-width="1.8" marker-end="url(#arrow)"/>
+    <path d="M564 554l13 12 24-29" fill="none" stroke="#8b4f1c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="584" y="604" text-anchor="middle" font-size="24" font-weight="700">运行用的 CLI</text>
+    <text x="584" y="638" text-anchor="middle" font-size="24" fill="#4f5b68">并未降到旧版</text>
+
+    <path d="M32 701H688" stroke="#bdb094" stroke-width="1.2"/>
+    <text x="32" y="732" font-size="24" fill="#4f5b68">本文样本：25,933 → 117，单位为提示词字符数。</text>
+    <text x="32" y="763" font-size="24" fill="#4f5b68">这里是生成模板回退；运行时兜底见第 5 节。</text>
+  </g>
+</svg>

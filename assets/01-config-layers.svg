@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 800" width="720" height="800" lang="zh-CN" role="img" aria-labelledby="layers-title layers-desc">
+  <title id="layers-title">Codex 的三层配置各自保存，分别决定连接、目录和当前对话</title>
+  <desc id="layers-desc">三条平行路径互不串联。Provider 存在 config.toml 的 model_providers 下，决定 base_url、wire_api 与鉴权。Catalog 由 model_catalog_json 指向本地 JSON；在本文样本版本，app-server 启动时将它加载成进程内不刷新的快照，供 picker、提示词与工具元数据使用。Per-thread 在 state_5.sqlite 的 threads 表保存 model 与 reasoning_effort，关联当前对话标签与请求 model。config.toml 顶层 model 仅作为新建对话的初值，不修改已有对话的保存值。样本版本为 CLI 0.169.1 与 CC Switch 4.0.33。</desc>
+  <defs>
+    <pattern id="layers-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M24 0H0V24" fill="none" stroke="#bdb094" stroke-width="0.65" opacity="0.23"/>
+    </pattern>
+    <marker id="layers-arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M2 2L10 6L2 10" fill="none" stroke="#263950" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="layers-seed-arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M2 2L10 6L2 10" fill="none" stroke="#8b4f1c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+  <rect width="720" height="800" fill="#fbf5e6"/>
+  <rect width="720" height="800" fill="url(#layers-grid)"/>
+  <g font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC',sans-serif" fill="#263950">
+    <text x="32" y="65" font-size="34" font-weight="700">三层配置，各自管一件事</text>
+    <text x="32" y="104" font-size="24" fill="#4f5b68">独立保存 · 不会逐层覆盖或自动同步</text>
+    <path d="M32 125H688" stroke="#bdb094" stroke-width="1.2"/>
+
+    <rect x="32" y="146" width="270" height="140" rx="5" fill="#fbf5e6" stroke="#bdb094" stroke-width="1.3"/>
+    <text x="50" y="184" font-size="28" font-weight="700" fill="#8b4f1c">① PROVIDER</text>
+    <path d="M269 163H284L292 171V191H269ZM284 163V172H292M274 180H286M274 185H286" fill="none" stroke="#bdb094" stroke-width="1.5" stroke-linejoin="round"/>
+    <text x="50" y="223" font-size="26">config.toml</text>
+    <text x="50" y="263" font-size="24" fill="#4f5b68">[model_providers]</text>
+    <path d="M302 218H352" fill="none" stroke="#263950" stroke-width="2.3" marker-end="url(#layers-arrow)"/>
+    <rect x="352" y="146" width="336" height="140" rx="5" fill="#fbf5e6" stroke="#bdb094" stroke-width="1.3"/>
+    <text x="370" y="184" font-size="28" font-weight="700">请求如何发出去</text>
+    <text x="370" y="224" font-size="26">地址 · 协议 · 鉴权</text>
+    <text x="370" y="264" font-size="24" fill="#4f5b68">base_url / wire_api</text>
+
+    <rect x="32" y="312" width="270" height="165" rx="5" fill="#fbf5e6" stroke="#bdb094" stroke-width="1.3"/>
+    <text x="50" y="350" font-size="28" font-weight="700" fill="#8b4f1c">② CATALOG</text>
+    <path d="M269 329H284L292 337V357H269ZM284 329V338H292M274 346H286M274 351H286" fill="none" stroke="#bdb094" stroke-width="1.5" stroke-linejoin="round"/>
+    <text x="50" y="393" font-size="26">目录 JSON</text>
+    <text x="50" y="435" font-size="26" fill="#4f5b68">model_catalog_json</text>
+    <path d="M302 394H352" fill="none" stroke="#263950" stroke-width="2.3" marker-end="url(#layers-arrow)"/>
+    <rect x="352" y="312" width="336" height="165" rx="5" fill="#f3ddb0" stroke="#8b4f1c" stroke-width="1.5"/>
+    <text x="370" y="350" font-size="26" font-weight="700">app-server 启动快照</text>
+    <text x="370" y="389" font-size="26">picker / 提示词</text>
+    <text x="370" y="424" font-size="26">工具元数据</text>
+    <path d="M627 392H656V416H627ZM633 386H662V410" fill="none" stroke="#8b4f1c" stroke-width="1.4" stroke-linejoin="round"/>
+    <text x="370" y="458" font-size="24" fill="#4f5b68">本进程内不刷新</text>
+
+    <rect x="32" y="503" width="270" height="137" rx="5" fill="#fbf5e6" stroke="#bdb094" stroke-width="1.3"/>
+    <text x="50" y="541" font-size="26" font-weight="700" fill="#8b4f1c">③ PER-THREAD</text>
+    <text x="50" y="581" font-size="26">state_5.sqlite</text>
+    <text x="50" y="621" font-size="24" fill="#4f5b68">threads 表</text>
+    <path d="M302 575H352" fill="none" stroke="#263950" stroke-width="2.3" marker-end="url(#layers-arrow)"/>
+    <rect x="352" y="503" width="336" height="137" rx="5" fill="#fbf5e6" stroke="#bdb094" stroke-width="1.3"/>
+    <text x="370" y="540" font-size="28" font-weight="700">当前对话的保存值</text>
+    <text x="370" y="580" font-size="24" fill="#4f5b68">model / reasoning_effort</text>
+    <text x="370" y="620" font-size="26">标签 · 请求 model</text>
+
+    <path d="M32 666H688" stroke="#bdb094" stroke-width="1.2"/>
+    <text x="32" y="696" font-size="24" fill="#8b4f1c">顶层 model</text>
+    <path d="M174 688H224" fill="none" stroke="#8b4f1c" stroke-width="1.8" stroke-dasharray="5 5" marker-end="url(#layers-seed-arrow)"/>
+    <text x="236" y="696" font-size="24" fill="#8b4f1c">只作为新对话的初值</text>
+    <text x="32" y="727" font-size="24" fill="#4f5b68">已有对话保留自己的模型与强度。</text>
+    <text x="32" y="758" font-size="24" fill="#4f5b68">样本：CLI 0.169.1 · CC Switch 4.0.33</text>
+  </g>
+</svg>

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 800" width="720" height="800" lang="zh-CN" role="img" aria-labelledby="title desc">
+  <title id="title">目录修复后的生成、加载与来源核对</title>
+  <desc id="desc">先从正确的 CLI 取得含目标模型的完整内置条目，再重新生成目录或指向自维护目录。完全退出并重启后，新 app-server 启动时加载新快照。核对有效目录、工具字段与 provenance。已有对话的模型和推理强度仍是独立保存值。图示依据文章的 CLI 0.169.1 和 CC Switch 4.0.33 样本。</desc>
+  <defs>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#bdb094" stroke-opacity=".18" stroke-width=".7"/></pattern>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="#263950" stroke-width="1.7" stroke-linejoin="round"/></marker>
+    <style>text{font-family:"Microsoft YaHei",system-ui,sans-serif;fill:#263950}.title{font-size:34px;font-weight:700}.label{font-size:28px;font-weight:700}.body{font-size:24px;fill:#4f5b68}.mono{font-family:Consolas,"Microsoft YaHei",monospace;font-size:26px}.line{fill:none;stroke:#263950;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.accent{fill:#8b4f1c}</style>
+  </defs>
+  <rect width="720" height="800" fill="#fbf5e6"/>
+  <rect width="720" height="800" fill="url(#grid)"/>
+  <text x="32" y="62" class="title">文件改了，进程读到了吗</text>
+  <text x="32" y="104" class="body">本文样本 · CLI 0.169.1 / CC Switch 4.0.33</text>
+  <path d="M32 126H688" stroke="#bdb094"/>
+  <g class="line">
+    <path d="M56 188V269" marker-end="url(#arrow)"/>
+    <path d="M56 319V401" marker-end="url(#arrow)"/>
+    <path d="M56 451V533" marker-end="url(#arrow)"/>
+    <rect x="99" y="145" width="589" height="107" rx="5" fill="#fbf5e6"/>
+    <rect x="99" y="277" width="589" height="107" rx="5" fill="#fbf5e6"/>
+    <rect x="99" y="409" width="589" height="107" rx="5" fill="#f3ddb0"/>
+    <rect x="99" y="541" width="589" height="107" rx="5" fill="#fbf5e6"/>
+  </g>
+  <g fill="#f3ddb0" stroke="#8b4f1c" stroke-width="1.5"><circle cx="56" cy="164" r="24"/><circle cx="56" cy="296" r="24"/><circle cx="56" cy="428" r="24"/><circle cx="56" cy="560" r="24"/></g>
+  <g text-anchor="middle" class="label accent"><text x="56" y="174">1</text><text x="56" y="306">2</text><text x="56" y="438">3</text><text x="56" y="570">4</text></g>
+  <text x="120" y="182" class="label">正确 CLI 的完整条目</text>
+  <text x="120" y="216" class="mono">debug models --bundled</text>
+  <text x="120" y="242" class="body">先核对模板来源中是否有目标 slug</text>
+  <text x="120" y="314" class="label">生成 / 指向完整 catalog</text>
+  <text x="120" y="349" class="body">方案 A：重新启用当前供应商</text>
+  <text x="120" y="375" class="body">方案 B：指向自维护的完整 JSON</text>
+  <text x="120" y="446" class="label accent">完全退出，再重启</text>
+  <text x="120" y="481" class="mono">app-server → 新目录快照</text>
+  <text x="120" y="507" class="body">新进程在启动时读取文件</text>
+  <text x="120" y="578" class="label">检查有效条目与来源</text>
+  <text x="120" y="613" class="mono">debug models · 工具字段</text>
+  <text x="120" y="639" class="body">再看新会话的 provenance</text>
+  <path d="M32 675H688" stroke="#bdb094"/>
+  <text x="32" y="710" class="body">已有对话仍保留自己的 model / effort。</text>
+  <text x="32" y="743" class="body">目录重新加载，不会批量改写对话。</text>
+  <text x="32" y="778" class="body">25,933 字符是本文样本，随版本核对。</text>
+</svg>

@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 800" width="720" height="800" lang="zh-CN" role="img" aria-labelledby="routing-title routing-desc">
+  <title id="routing-title">Codex 代理按供应商协议选择直转或双向转换</title>
+  <desc id="routing-desc">文中 CC Switch 4.0.33 的 Codex 代理路径：Responses 请求进入本地代理，按供应商的 apiFormat 分支。openai_responses 供应商接收原生 Responses 请求，请求和响应原样转发；openai_chat 供应商接收转换后的 Chat Completions 请求，其响应转换回 Responses。两条路径的模型 slug 都沿用请求中的模型 M。本图不描述聚合模式选择供应商，也不描述 Claude 的模型映射。</desc>
+  <defs>
+    <pattern id="routing-grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#bdb094" stroke-width=".7" opacity=".18"/></pattern>
+    <marker id="routing-arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto"><path d="M2 2L10 6L2 10" fill="none" stroke="#263950" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <marker id="routing-return" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto"><path d="M2 2L10 6L2 10" fill="none" stroke="#8b4f1c" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <style>text{font-family:"Microsoft YaHei",system-ui,sans-serif;fill:#263950}.title{font-size:34px;font-weight:700}.label{font-size:26px;font-weight:600}.body{font-size:24px;fill:#4f5b68}.mono{font-family:Consolas,"Microsoft YaHei",monospace}.rule{fill:none;stroke:#263950;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.accent{fill:#8b4f1c}</style>
+  </defs>
+  <rect width="720" height="800" fill="#fbf5e6"/>
+  <rect width="720" height="800" fill="url(#routing-grid)"/>
+  <text x="32" y="59" class="title">转的是协议，模型名沿用</text>
+  <text x="32" y="101" class="body">CC Switch 4.0.33 · 文中 Codex 代理路径</text>
+  <path d="M32 120H688" stroke="#bdb094"/>
+
+  <rect x="32" y="139" width="656" height="73" rx="5" fill="#fbf5e6" stroke="#263950" stroke-width="2"/>
+  <path d="M48 151V200M55 151V200" stroke="#8b4f1c" stroke-width="2"/>
+  <text x="75" y="184" class="label">Codex / Responses 请求</text>
+  <rect x="545" y="155" width="123" height="40" rx="3" fill="#f3ddb0" stroke="#8b4f1c"/>
+  <text x="607" y="183" text-anchor="middle" class="label">模型 M</text>
+  <path d="M290 216V242" class="rule" marker-end="url(#routing-arrow)"/>
+  <path d="M430 242V216" fill="none" stroke="#8b4f1c" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#routing-return)"/>
+  <text x="266" y="235" text-anchor="end" class="body">请求</text>
+  <text x="451" y="235" class="body accent">响应</text>
+
+  <rect x="174" y="249" width="372" height="76" rx="5" fill="#f3ddb0" stroke="#263950" stroke-width="2"/>
+  <text x="360" y="279" text-anchor="middle" class="label">CC Switch 本地代理</text>
+  <text x="360" y="313" text-anchor="middle" class="body mono">apiFormat 分支</text>
+  <circle cx="360" cy="345" r="4" fill="#263950"/>
+  <path d="M360 326V345H186V366" class="rule" marker-end="url(#routing-arrow)"/>
+  <path d="M360 345H534V366" class="rule" marker-end="url(#routing-arrow)"/>
+
+  <rect x="32" y="373" width="308" height="83" rx="5" fill="#fbf5e6" stroke="#263950" stroke-width="2"/>
+  <rect x="380" y="373" width="308" height="83" rx="5" fill="#fbf5e6" stroke="#8b4f1c" stroke-width="2"/>
+  <text x="186" y="405" text-anchor="middle" class="body mono">openai_responses</text>
+  <text x="186" y="439" text-anchor="middle" class="label">原生 Responses</text>
+  <text x="534" y="405" text-anchor="middle" class="body mono accent">openai_chat</text>
+  <text x="534" y="439" text-anchor="middle" class="label accent">Chat Completions</text>
+
+  <path d="M56 465V601" class="rule" marker-end="url(#routing-arrow)"/>
+  <path d="M404 465V601" class="rule" marker-end="url(#routing-arrow)"/>
+  <path d="M316 601V465" fill="none" stroke="#8b4f1c" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#routing-return)"/>
+  <path d="M664 601V465" fill="none" stroke="#8b4f1c" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#routing-return)"/>
+  <text x="186" y="501" text-anchor="middle" class="label">请求直转</text>
+  <text x="186" y="544" text-anchor="middle" class="label accent">响应直转</text>
+  <text x="186" y="580" text-anchor="middle" class="body">格式不改写</text>
+  <text x="534" y="501" text-anchor="middle" class="label">请求转成 Chat</text>
+  <text x="534" y="544" text-anchor="middle" class="label accent">响应转回</text>
+  <text x="534" y="580" text-anchor="middle" class="label mono accent">Responses</text>
+
+  <g fill="#fbf5e6" stroke="#263950" stroke-width="2">
+    <path d="M32 610H321L340 629V698H32Z"/>
+    <path d="M380 610H669L688 629V698H380Z"/>
+  </g>
+  <path d="M321 610V629H340M669 610V629H688" class="rule"/>
+  <text x="186" y="647" text-anchor="middle" class="label">Responses 上游</text>
+  <text x="186" y="682" text-anchor="middle" class="label accent">模型 M</text>
+  <text x="534" y="647" text-anchor="middle" class="label">Chat 上游</text>
+  <text x="534" y="682" text-anchor="middle" class="label accent">模型 M</text>
+
+  <path d="M32 718H688" stroke="#bdb094"/>
+  <text x="32" y="753" class="body">协议可转换，模型 slug 沿用请求中的 M。</text>
+  <text x="32" y="787" class="body">聚合模式选供应商；图示不涉及 Claude 映射。</text>
+</svg>
